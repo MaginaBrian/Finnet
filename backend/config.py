@@ -2,9 +2,12 @@ import os
 
 def _database_url() -> str:
     url = os.getenv("DATABASE_URL", "sqlite:///fintrack.db")
-
     if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
+        url = "postgresql://" + url[len("postgres://"):]
+    if url.startswith("postgresql+psycopg://"):
+        url = "postgresql+psycopg2://" + url[len("postgresql+psycopg://"):]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg2://" + url[len("postgresql://"):]
     return url
 
 def _split_csv(value: str) -> list[str]:
