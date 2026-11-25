@@ -1,0 +1,98 @@
+:root {
+
+  --navy-900: #081628;
+  --navy-800: #0b1f3a;
+  --navy-700: #152f55;
+  --navy-600: #1f4272;
+  --accent: #f5b301;
+  --accent-strong: #d99a00;
+
+  --grey-0: #ffffff;
+  --grey-50: #f4f6f8;
+  --grey-100: #e8ecf1;
+  --grey-300: #c5cdd8;
+  --grey-500: #5b6778;
+  --grey-700: #364152;
+  --grey-900: #1a2433;
+
+  --positive: #0b7a43;
+  --negative: #b42318;
+  --positive-bg: #e3f4ea;
+  --negative-bg: #fdeceb;
+
+  --bg: var(--grey-50);
+  --surface: var(--grey-0);
+  --surface-muted: var(--grey-50);
+  --border: var(--grey-100);
+  --border-strong: var(--grey-300);
+  --text: var(--grey-900);
+  --text-muted: var(--grey-500);
+  --header-bg: var(--navy-800);
+  --header-text: #ffffff;
+  --action-bg: var(--navy-800);
+  --action-bg-hover: var(--navy-700);
+  --action-text: #ffffff;
+  --link: var(--navy-600);
+  --focus: #1f6feb;
+  --overlay: rgba(8, 22, 40, 0.55);
+
+  --chart-1: #0b1f3a;
+  --chart-2: #f5b301;
+  --chart-3: #3f6fa8;
+  --chart-4: #8aa4c4;
+  --chart-5: #9a6b00;
+  --chart-6: #5b6778;
+
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --leading-tight: 1.25;
+  --leading-body: 1.5;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --shadow-sm: 0 1px 2px rgba(8, 22, 40, 0.06);
+  --shadow-lg: 0 16px 40px rgba(8, 22, 40, 0.28);
+  --content-width: 1120px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #07111f;
+    --surface: #0e2038;
+    --surface-muted: #0b1a2f;
+    --border: #1d3250;
+    --border-strong: #2d4a70;
+    --text: #e8ecf1;
+    --text-muted: #a3b1c4;
+    --header-bg: #050d18;
+    --action-bg: var(--accent);
+    --action-bg-hover: #ffc533;
+    --action-text: var(--navy-900);
+    --link: #9cc0f0;
+    --positive: #4ade9a;
+    --negative: #ff9b92;
+    --positive-bg: #0f3324;
+    --negative-bg: #3b1714;
+    --focus: #8ab8ff;
+    --chart-1: #8aa4c4;
+    --chart-2: #f5b301;
+    --chart-3: #3f6fa8;
+    --chart-4: #c5d6ec;
+    --chart-5: #d99a00;
+    --chart-6: #5b6778;
+  }
+}
