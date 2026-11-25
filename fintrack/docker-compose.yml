@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fintrack
+      POSTGRES_PASSWORD: fintrack
+      POSTGRES_DB: fintrack
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintrack"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    environment:
+      APP_ENV: development
+      SECRET_KEY: local-compose-secret-change-me
+      DATABASE_URL: postgresql://fintrack:fintrack@db:5432/fintrack
+      CORS_ORIGINS: http://localhost:5173
+      SEED_DEMO: "true"
+    ports:
+      - "5000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:5000
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
