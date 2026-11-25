@@ -1,35 +1,40 @@
 import { Link } from "react-router-dom";
+import { formatDate, formatMoney } from "../utils/format";
+import Pl from "./Pl";
 
-function formatMoney(value, currency) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency || "KES",
-  }).format(Number(value) || 0);
-}
-
-export default function PortfolioCard({ portfolio }) {
+export default function PortfolioCard({ portfolio, onEdit, onDelete }) {
+  const { totals, base_currency: currency } = portfolio;
   return (
-    <Link className="portfolio-card" to={`/portfolios/${portfolio.id}`}>
-      <div>
-        <h3>{portfolio.name}</h3>
-        <p>
-          {portfolio.client_name} · {portfolio.base_currency}
-        </p>
-      </div>
-      <dl>
-        <div>
-          <dt>Market value</dt>
-          <dd>{formatMoney(portfolio.totals?.total_value, portfolio.base_currency)}</dd>
+    <li>
+      <article className="panel pcard">
+        <Link to={`/portfolios/${portfolio.id}`} className="pcard__main">
+          <div>
+            <h2 className="pcard__name">{portfolio.name}</h2>
+            <p className="pcard__client">{portfolio.client_name}</p>
+          </div>
+          <div>
+            <p className="pcard__value">{formatMoney(totals.total_value, currency)}</p>
+            <p className="pcard__client">
+              <Pl value={totals.unrealized_pl} currency={currency} percent={totals.unrealized_pl_pct} /> unrealised
+            </p>
+          </div>
+          <p className="pcard__meta">
+            <span className="badge">{currency}</span>
+            <span>
+              {portfolio.transaction_count} {portfolio.transaction_count === 1 ? "trade" : "trades"} · created{" "}
+              {formatDate(portfolio.created_at)}
+            </span>
+          </p>
+        </Link>
+        <div className="pcard__actions">
+          <button type="button" className="btn btn--secondary btn--sm" onClick={() => onEdit(portfolio)}>
+            Edit<span className="visually-hidden"> {portfolio.name}</span>
+          </button>
+          <button type="button" className="btn btn--secondary btn--sm" onClick={() => onDelete(portfolio)}>
+            Delete<span className="visually-hidden"> {portfolio.name}</span>
+          </button>
         </div>
-        <div>
-          <dt>Invested</dt>
-          <dd>{formatMoney(portfolio.totals?.total_invested, portfolio.base_currency)}</dd>
-        </div>
-        <div>
-          <dt>Unrealized</dt>
-          <dd>{formatMoney(portfolio.totals?.unrealized_pl, portfolio.base_currency)}</dd>
-        </div>
-      </dl>
-    </Link>
+      </article>
+    </li>
   );
 }

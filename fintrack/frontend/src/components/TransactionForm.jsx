@@ -1,69 +1,85 @@
 import { useState } from "react";
-import { messageFrom } from "../api/axios";
+import { splitApiError } from "../utils/apiErrors";
+import { todayIso } from "../utils/format";
+import { hasErrors, validateTransaction } from "../utils/validators";
+import Field from "./Field";
 
-const emptyForm = {
-  type: "BUY",
-  instrument: "",
-  quantity: "",
-  unit_price: "",
-  trade_date: new Date().toISOString().slice(0, 10),
-};
+export default function TransactionForm({ currency, onSubmit, onCancel }) {
+  const [values, setValues] = useState({
+    instrument: "",
+    type: "BUY",
+    quantity: "",
+    unit_price: "",
+    trade_date: todayIso(),
+  });
+  const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-export default function TransactionForm({ onSubmit }) {
-  const [form, setForm] = useState(emptyForm);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const set = (field) => (e) => setValues((v) => ({ ...v, [field]: e.target.value }));
 
-  function update(event) {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-    setSaving(true);
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const found = validateTransaction(values, todayIso());
+    setErrors(found);
+    setFormError("");
+    if (hasErrors(found)) return;
+    setBusy(true);
     try {
-      await onSubmit(form);
-      setForm((current) => ({ ...emptyForm, type: current.type, trade_date: current.trade_date }));
+      await onSubmit({
+        instrument: values.instrument.trim().toUpperCase(),
+        type: values.type,
+        quantity: Number(values.quantity),
+        unit_price: Number(values.unit_price),
+        trade_date: values.trade_date,
+      });
     } catch (err) {
-      setError(messageFrom(err) || "Could not save the transaction");
-    } finally {
-      setSaving(false);
+      const { fieldErrors, formError: message } = splitApiError(err);
+      setErrors(fieldErrors);
+      setFormError(message);
+      setBusy(false);
     }
   }
 
   return (
-    <form className="stack-form" onSubmit={handleSubmit}>
-      <div className="form-grid">
-        <label>
-          Type
-          <select name="type" value={form.type} onChange={update}>
-            <option value="BUY">Buy</option>
-            <option value="SELL">Sell</option>
-          </select>
-        </label>
-        <label>
-          Date
-          <input type="date" name="trade_date" value={form.trade_date} onChange={update} required />
-        </label>
-        <label>
-          Instrument
-          <input name="instrument" value={form.instrument} onChange={update} required />
-        </label>
-        <label>
-          Quantity
-          <input name="quantity" value={form.quantity} onChange={update} inputMode="decimal" required />
-        </label>
-        <label>
-          Unit price
-          <input name="unit_price" value={form.unit_price} onChange={update} inputMode="decimal" required />
-        </label>
+    <form className="form" onSubmit={handleSubmit} noValidate>
+      {formError && (
+        <div className="alert" role="alert">
+          {formError}
+        </div>
+      )}
+      <div className="form__row">
+        <Field label="Instrument" error={errors.instrument} hint="e.g. SCOM, KCB, EQTY, T-BILL-91">
+          {(p) => <input {...p} className="input" value={values.instrument} onChange={set("instrument")} maxLength={20} autoFocus />}
+        </Field>
+        <Field label="Type" error={errors.type}>
+          {(p) => (
+            <select {...p} className="input" value={values.type} onChange={set("type")}>
+              <option value="BUY">Buy</option>
+              <option value="SELL">Sell</option>
+            </select>
+          )}
+        </Field>
       </div>
-      {error ? <p className="form-error">{error}</p> : null}
-      <button className="button" type="submit" disabled={saving}>
-        {saving ? "Saving…" : "Add trade"}
-      </button>
+      <div className="form__row">
+        <Field label="Quantity" error={errors.quantity}>
+          {(p) => <input {...p} className="input input--num" type="number" inputMode="decimal" min="0" step="any" value={values.quantity} onChange={set("quantity")} />}
+        </Field>
+        <Field label={`Unit price (${currency})`} error={errors.unit_price}>
+          {(p) => <input {...p} className="input input--num" type="number" inputMode="decimal" min="0" step="any" value={values.unit_price} onChange={set("unit_price")} />}
+        </Field>
+      </div>
+      <Field label="Trade date" error={errors.trade_date}>
+        {(p) => <input {...p} className="input" type="date" value={values.trade_date} max={todayIso()} onChange={set("trade_date")} />}
+      </Field>
+      <div className="form__actions">
+        <button type="button" className="btn btn--secondary" onClick={onCancel} disabled={busy}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn--primary" disabled={busy}>
+          {busy ? "Saving…" : "Record trade"}
+        </button>
+      </div>
     </form>
   );
 }
