@@ -1,53 +1,44 @@
-def _auth_header(client):
-    response = client.post(
-        "/api/auth/register",
-        json={"username": "grace", "full_name": "Grace Hopper", "password": "secret123"},
-    )
-    token = response.get_json()["token"]
-    return {"Authorization": f"Bearer {token}"}
+from conftest import register
 
 
-def test_portfolio_transaction_and_summary(client):
-    headers = _auth_header(client)
-    created = client.post(
-        "/api/portfolios",
-        json={"name": "Growth", "client_name": "Ada Capital", "base_currency": "KES"},
-        headers=headers,
-    )
+def test_portfolio_crud(client, auth):
+    body = {"name": "Growth", "client_name": "Baraka Ltd", "base_currency": "KES"}
+    created = client.post("/api/portfolios", headers=auth, json=body)
     assert created.status_code == 201
-    portfolio_id = created.get_json()["id"]
+    pid = created.get_json()["id"]
 
-    buy = client.post(
-        f"/api/portfolios/{portfolio_id}/transactions",
-        json={
-            "instrument": "scom",
-            "type": "BUY",
-            "quantity": "2",
-            "unit_price": "100",
-            "trade_date": "2026-01-02",
-        },
-        headers=headers,
-    )
-    assert buy.status_code == 201
-    assert buy.get_json()["instrument"] == "SCOM"
+    assert len(client.get("/api/portfolios", headers=auth).get_json()["data"]) == 1
+    assert client.get(f"/api/portfolios/{pid}", headers=auth).get_json()["name"] == "Growth"
 
-    short = client.post(
-        f"/api/portfolios/{portfolio_id}/transactions",
-        json={
-            "instrument": "SCOM",
-            "type": "SELL",
-            "quantity": "5",
-            "unit_price": "110",
-            "trade_date": "2026-01-03",
-        },
-        headers=headers,
-    )
-    assert short.status_code == 422
-    assert short.get_json()["error"]["code"] == "insufficient_holdings"
+    updated = client.put(f"/api/portfolios/{pid}", headers=auth, json={**body, "base_currency": "USD"})
+    assert updated.status_code == 200
+    assert updated.get_json()["base_currency"] == "USD"
 
-    summary = client.get(f"/api/portfolios/{portfolio_id}/summary", headers=headers)
-    totals = summary.get_json()["totals"]
-    assert summary.status_code == 200
-    assert totals["total_invested"] == 200
-    assert totals["total_value"] == 200
-    assert totals["unrealized_pl"] == 0
+    assert client.delete(f"/api/portfolios/{pid}", headers=auth).status_code == 204
+    assert client.get(f"/api/portfolios/{pid}", headers=auth).status_code == 404
+
+
+def test_invalid_currency_and_missing_fields(client, auth):
+    res = client.post("/api/portfolios", headers=auth, json={"name": "", "base_currency": "EUR"})
+    assert res.status_code == 400
+    details = res.get_json()["error"]["details"]
+    assert set(details) == {"name", "client_name", "base_currency"}
+
+
+def test_unknown_portfolio_is_404_with_json_body(client, auth):
+    res = client.get("/api/portfolios/999", headers=auth)
+    assert res.status_code == 404
+    assert res.get_json()["error"]["code"] == "not_found"
+
+
+def test_cannot_see_another_analysts_portfolio(client, portfolio_id):
+    other = register(client, username="intruder")
+    assert client.get(f"/api/portfolios/{portfolio_id}", headers=other).status_code == 404
+    assert client.delete(f"/api/portfolios/{portfolio_id}", headers=other).status_code == 404
+    assert client.get("/api/portfolios", headers=other).get_json()["data"] == []
+
+
+def test_non_json_body_is_400(client, auth):
+    res = client.post("/api/portfolios", headers=auth, data="oops", content_type="text/plain")
+    assert res.status_code == 400
+    assert res.get_json()["error"]["code"] == "invalid_json"

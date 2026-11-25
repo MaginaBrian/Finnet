@@ -1,0 +1,255 @@
+openapi: 3.0.3
+info:
+  title: FinTrack API
+  version: 1.0.0
+  description: >
+    Portfolio and transactions tracker API by Finnet Technologies.
+    Sign in via `/api/auth/login`, then use the returned token with the **Authorize** button.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Portfolios
+  - name: Transactions
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Register an analyst
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Log in and receive a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current analyst
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/portfolios:
+    get:
+      tags: [Portfolios]
+      summary: List my portfolios (with headline totals)
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [Portfolios]
+      summary: Create a portfolio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PortfolioInput' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Portfolio' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/portfolios/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/PortfolioId' }
+    get:
+      tags: [Portfolios]
+      summary: Get a portfolio
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Portfolio' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [Portfolios]
+      summary: Update a portfolio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PortfolioInput' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Portfolio' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [Portfolios]
+      summary: Delete a portfolio and its transactions
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/portfolios/{id}/summary:
+    parameters:
+      - { $ref: '#/components/parameters/PortfolioId' }
+    get:
+      tags: [Portfolios]
+      summary: Holdings and performance summary
+      description: Weighted-average cost. Current value uses the last traded price per instrument.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Summary' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/portfolios/{id}/transactions:
+    parameters:
+      - { $ref: '#/components/parameters/PortfolioId' }
+    get:
+      tags: [Transactions]
+      summary: List transactions (filter, sort, paginate)
+      parameters:
+        - { name: instrument, in: query, schema: { type: string }, description: Substring match }
+        - { name: type, in: query, schema: { type: string, enum: [BUY, SELL] } }
+        - { name: date_from, in: query, schema: { type: string, format: date } }
+        - { name: date_to, in: query, schema: { type: string, format: date } }
+        - { name: sort, in: query, schema: { type: string, enum: [trade_date, instrument, type, quantity, unit_price], default: trade_date } }
+        - { name: order, in: query, schema: { type: string, enum: [asc, desc], default: desc } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [Transactions]
+      summary: Record a BUY or SELL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TransactionInput' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Transaction' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/Error' }
+        '422': { description: Selling more than is held, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /api/portfolios/{id}/transactions/export.csv:
+    parameters:
+      - { $ref: '#/components/parameters/PortfolioId' }
+    get:
+      tags: [Transactions]
+      summary: Export transactions as CSV (same filters as the list)
+      responses:
+        '200': { description: CSV file, content: { text/csv: { schema: { type: string } } } }
+  /api/transactions/{id}:
+    delete:
+      tags: [Transactions]
+      summary: Delete a transaction
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { description: Would leave a later SELL without holdings, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    PortfolioId: { name: id, in: path, required: true, schema: { type: integer } }
+  responses:
+    Error: { description: Error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    ValidationError: { description: Invalid input, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: validation_error }
+            message: { type: string }
+            details: { type: object, additionalProperties: { type: string } }
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, example: analyst.one }
+        password: { type: string, minLength: 8 }
+        full_name: { type: string }
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, example: demo }
+        password: { type: string, example: Demo@12345 }
+    AuthResponse:
+      type: object
+      properties:
+        token: { type: string }
+        user: { type: object, properties: { id: { type: integer }, username: { type: string }, full_name: { type: string } } }
+    PortfolioInput:
+      type: object
+      required: [name, client_name, base_currency]
+      properties:
+        name: { type: string, example: Growth Equities }
+        client_name: { type: string, example: Baraka Holdings Ltd }
+        base_currency: { type: string, enum: [KES, USD] }
+    Portfolio:
+      allOf:
+        - $ref: '#/components/schemas/PortfolioInput'
+        - type: object
+          properties:
+            id: { type: integer }
+            created_at: { type: string, format: date }
+            transaction_count: { type: integer }
+            totals: { $ref: '#/components/schemas/Totals' }
+    TransactionInput:
+      type: object
+      required: [instrument, type, quantity, unit_price, trade_date]
+      properties:
+        instrument: { type: string, example: SCOM }
+        type: { type: string, enum: [BUY, SELL] }
+        quantity: { type: number, example: 1000 }
+        unit_price: { type: number, example: 17.5 }
+        trade_date: { type: string, format: date, example: '2026-11-20' }
+    Transaction:
+      allOf:
+        - $ref: '#/components/schemas/TransactionInput'
+        - type: object
+          properties:
+            id: { type: integer }
+            portfolio_id: { type: integer }
+            total: { type: number }
+    Totals:
+      type: object
+      properties:
+        total_invested: { type: number }
+        total_value: { type: number }
+        unrealized_pl: { type: number }
+        unrealized_pl_pct: { type: number }
+        realized_pl: { type: number }
+    Summary:
+      type: object
+      properties:
+        portfolio_id: { type: integer }
+        base_currency: { type: string }
+        valuation_basis: { type: string, example: last_trade_price }
+        totals: { $ref: '#/components/schemas/Totals' }
+        holdings:
+          type: array
+          items:
+            type: object
+            properties:
+              instrument: { type: string }
+              net_quantity: { type: number }
+              average_cost: { type: number }
+              total_invested: { type: number }
+              last_price: { type: number }
+              total_value: { type: number }
+              unrealized_pl: { type: number }
+              unrealized_pl_pct: { type: number }
+              allocation_pct: { type: number }
