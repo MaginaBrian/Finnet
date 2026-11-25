@@ -14,7 +14,7 @@ export default function Navbar() {
     <header className="navbar">
       <div>
         <p className="eyebrow">Signed in</p>
-        <strong>{user?.name}</strong>
+        <strong>{user?.full_name || user?.username}</strong>
       </div>
       <button className="button button-ghost" type="button" onClick={handleLogout}>
         Log out

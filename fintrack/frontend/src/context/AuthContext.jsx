@@ -27,15 +27,19 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       loading,
-      async login(email, password) {
-        const result = await authApi.login({ email, password });
-        localStorage.setItem("token", result.access_token);
+      async login(username, password) {
+        const result = await authApi.login({ username, password });
+        localStorage.setItem("token", result.token);
         setUser(result.user);
         return result.user;
       },
-      async register(name, email, password) {
-        const result = await authApi.register({ name, email, password });
-        localStorage.setItem("token", result.access_token);
+      async register(username, fullName, password) {
+        const result = await authApi.register({
+          username,
+          full_name: fullName,
+          password,
+        });
+        localStorage.setItem("token", result.token);
         setUser(result.user);
         return result.user;
       },

@@ -6,7 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", fullName: "", password: "" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Register() {
     setSaving(true);
     setError("");
     try {
-      await register(form.name, form.email, form.password);
+      await register(form.username, form.fullName, form.password);
       navigate("/");
     } catch (err) {
       setError(messageFrom(err) || "Could not create the account");
@@ -33,14 +33,14 @@ export default function Register() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <p className="eyebrow">Fintrack</p>
         <h1>Create your account</h1>
-        <p className="lede">Track cash, buys, sells, and dividends in one place.</p>
+        <p className="lede">Track buys and sells for KES and USD portfolios.</p>
         <label>
-          Name
-          <input name="name" value={form.name} onChange={update} required />
+          Username
+          <input name="username" value={form.username} onChange={update} minLength={3} required />
         </label>
         <label>
-          Email
-          <input name="email" type="email" value={form.email} onChange={update} required />
+          Full name
+          <input name="fullName" value={form.fullName} onChange={update} />
         </label>
         <label>
           Password

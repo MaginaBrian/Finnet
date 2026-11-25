@@ -7,20 +7,32 @@ export async function listPortfolios() {
 
 export async function createPortfolio(payload) {
   const { data } = await api.post("/portfolios", payload);
-  return data.data;
+  return data;
 }
 
 export async function getPortfolio(id) {
-  const { data } = await api.get(`/portfolios/${id}`);
-  return data.data;
+  const [portfolioRes, summaryRes, transactionRes] = await Promise.all([
+    api.get(`/portfolios/${id}`),
+    api.get(`/portfolios/${id}/summary`),
+    api.get(`/portfolios/${id}/transactions`, { params: { per_page: 100 } }),
+  ]);
+  return {
+    ...portfolioRes.data,
+    holdings: summaryRes.data.holdings,
+    totals: summaryRes.data.totals,
+    transactions: transactionRes.data.data,
+  };
 }
 
 export async function deletePortfolio(id) {
-  const { data } = await api.delete(`/portfolios/${id}`);
-  return data.data;
+  await api.delete(`/portfolios/${id}`);
 }
 
 export async function fetchSummary() {
-  const { data } = await api.get("/summary");
-  return data.data;
+  const portfolios = await listPortfolios();
+  return {
+    portfolio_count: portfolios.length,
+    portfolios,
+    recent_transactions: [],
+  };
 }

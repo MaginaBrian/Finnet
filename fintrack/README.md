@@ -29,7 +29,7 @@ The API listens on `http://localhost:5000`. Production uses `./start.sh`, which 
 
 Demo login after seeding (`DEMO_USERNAME=demo`):
 
-- email: `demo@fintrack.app`
+- username: `demo`
 - password: `Demo@12345`
 
 Tests:
@@ -57,6 +57,8 @@ The dev server runs at `http://localhost:5173` and proxies `/api` to the Flask a
 | GET | `/api/auth/me` | Current user |
 | GET | `/api/portfolios` | List portfolios |
 | POST | `/api/portfolios` | Create a portfolio |
-| GET | `/api/portfolios/<id>` | Portfolio, holdings, and transactions |
-| POST | `/api/portfolios/<id>/transactions` | Add a transaction |
-| GET | `/api/summary` | Dashboard totals |
+| GET | `/api/portfolios/<id>` | Portfolio and totals |
+| GET | `/api/portfolios/<id>/summary` | Holdings and profit or loss |
+| GET | `/api/portfolios/<id>/transactions` | Paginated trades |
+| POST | `/api/portfolios/<id>/transactions` | Add a trade |
+| DELETE | `/api/transactions/<id>` | Remove a trade |

@@ -3,13 +3,6 @@ import PortfolioCard from "../components/PortfolioCard";
 import TransactionTable from "../components/TransactionTable";
 import { fetchSummary } from "../api/portfolioApi";
 
-function formatMoney(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(Number(value) || 0);
-}
-
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState("");
@@ -37,16 +30,8 @@ export default function Dashboard() {
       </header>
       <div className="stat-grid">
         <article>
-          <p>Net worth</p>
-          <strong>{formatMoney(summary.net_worth)}</strong>
-        </article>
-        <article>
-          <p>Cash</p>
-          <strong>{formatMoney(summary.cash)}</strong>
-        </article>
-        <article>
-          <p>Holdings at cost</p>
-          <strong>{formatMoney(summary.holdings_value)}</strong>
+          <p>Portfolios</p>
+          <strong>{summary.portfolio_count}</strong>
         </article>
       </div>
       <h2>Portfolios</h2>
@@ -57,9 +42,9 @@ export default function Dashboard() {
           ))}
         </div>
       ) : (
-        <p className="empty">Create a portfolio to start tracking transactions.</p>
+        <p className="empty">Create a portfolio to start tracking trades.</p>
       )}
-      <h2>Recent activity</h2>
+      <h2>Recent trades</h2>
       <TransactionTable transactions={summary.recent_transactions} />
     </section>
   );

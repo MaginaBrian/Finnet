@@ -5,42 +5,47 @@
 from flask import jsonify
 from werkzeug.exceptions import HTTPException
 
-from app.extensions import db
-from app.utils.responses import APIError
 
-_CODES = {
-    400: "validation_error",
-    401: "unauthorized",
-    403: "forbidden",
-    404: "not_found",
-    405: "method_not_allowed",
-    409: "conflict",
-    422: "validation_error",
-    500: "server_error",
-}
+class ApiError(Exception):
+    def __init__(self, status: int, code: str, message: str, details: dict | None = None):
+        super().__init__(message)
+        self.status = status
+        self.code = code
+        self.message = message
+        self.details = details or {}
+
+
+def validation_error(details: dict, message: str = "Some fields are invalid.") -> ApiError:
+    return ApiError(400, "validation_error", message, details)
+
+
+def not_found(what: str = "Resource") -> ApiError:
+    return ApiError(404, "not_found", f"{what} not found.")
+
+
+def _payload(code: str, message: str, details: dict | None = None):
+    return jsonify({"error": {"code": code, "message": message, "details": details or {}}})
 
 
 def register_error_handlers(app):
-    @app.errorhandler(APIError)
-    def handle_api_error(err):
-        db.session.rollback()
-        return _error(err.status, err.code or _CODES.get(err.status, "error"), err.message, err.details)
+    @app.errorhandler(ApiError)
+    def handle_api_error(err: ApiError):
+        response = _payload(err.code, err.message, err.details)
+        response.status_code = err.status
+        if err.status == 401:
+            response.headers["WWW-Authenticate"] = "Bearer"
+        return response
 
     @app.errorhandler(HTTPException)
-    def handle_http_error(err):
-        return _error(err.code or 500, _CODES.get(err.code, "error"), err.description)
+    def handle_http_error(err: HTTPException):
+        code = (err.name or "error").lower().replace(" ", "_")
+        response = _payload(code, err.description or err.name)
+        response.status_code = err.code or 500
+        return response
 
     @app.errorhandler(Exception)
-    def handle_unexpected(err):
-        if app.propagate_exceptions:
-            raise err
-        app.logger.exception("Unhandled error")
-        db.session.rollback()
-        return _error(500, "server_error", "Something went wrong")
-
-
-def _error(status, code, message, details=None):
-    body = {"code": code, "message": message}
-    if details:
-        body["details"] = details
-    return jsonify({"error": body}), status
+    def handle_unexpected(err: Exception):
+        app.logger.exception("Unhandled error: %s", err)
+        response = _payload("internal_error", "Something went wrong on our side.")
+        response.status_code = 500
+        return response

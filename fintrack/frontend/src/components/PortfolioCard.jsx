@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 
-function formatMoney(value) {
+function formatMoney(value, currency) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: currency || "KES",
   }).format(Number(value) || 0);
 }
 
@@ -12,20 +12,22 @@ export default function PortfolioCard({ portfolio }) {
     <Link className="portfolio-card" to={`/portfolios/${portfolio.id}`}>
       <div>
         <h3>{portfolio.name}</h3>
-        <p>{portfolio.description || "No description"}</p>
+        <p>
+          {portfolio.client_name} · {portfolio.base_currency}
+        </p>
       </div>
       <dl>
         <div>
-          <dt>Net worth</dt>
-          <dd>{formatMoney(portfolio.net_worth)}</dd>
+          <dt>Market value</dt>
+          <dd>{formatMoney(portfolio.totals?.total_value, portfolio.base_currency)}</dd>
         </div>
         <div>
-          <dt>Cash</dt>
-          <dd>{formatMoney(portfolio.cash)}</dd>
+          <dt>Invested</dt>
+          <dd>{formatMoney(portfolio.totals?.total_invested, portfolio.base_currency)}</dd>
         </div>
         <div>
-          <dt>Holdings</dt>
-          <dd>{formatMoney(portfolio.holdings_value)}</dd>
+          <dt>Unrealized</dt>
+          <dd>{formatMoney(portfolio.totals?.unrealized_pl, portfolio.base_currency)}</dd>
         </div>
       </dl>
     </Link>

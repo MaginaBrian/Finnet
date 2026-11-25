@@ -1,30 +1,20 @@
+from app.errors import ApiError
 from app.extensions import db
-from app.models.user import User
-from app.utils.responses import APIError
+from app.models import User
 
 
-def register_user(name, email, password):
-    cleaned_name = (name or "").strip()
-    cleaned_email = (email or "").strip().lower()
-    if not cleaned_name:
-        raise APIError("Name is required")
-    if "@" not in cleaned_email or "." not in cleaned_email.split("@")[-1]:
-        raise APIError("A valid email is required")
-    if not password or len(password) < 8:
-        raise APIError("Password must be at least 8 characters")
-    if User.query.filter_by(email=cleaned_email).first():
-        raise APIError("Email is already registered", 409)
-
-    user = User(name=cleaned_name, email=cleaned_email)
-    user.set_password(password)
+def register_user(clean):
+    if User.query.filter_by(username=clean["username"]).first():
+        raise ApiError(409, "conflict", "Username is already taken.")
+    user = User(username=clean["username"], full_name=clean.get("full_name") or "")
+    user.set_password(clean["password"])
     db.session.add(user)
     db.session.commit()
     return user
 
 
-def authenticate(email, password):
-    cleaned_email = (email or "").strip().lower()
-    user = User.query.filter_by(email=cleaned_email).first()
+def authenticate(username, password):
+    user = User.query.filter_by(username=username).first()
     if user is None or not user.check_password(password or ""):
-        raise APIError("Invalid email or password", 401)
+        raise ApiError(401, "unauthorized", "Invalid username or password.")
     return user

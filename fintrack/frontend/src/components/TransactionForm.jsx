@@ -1,23 +1,18 @@
 import { useState } from "react";
 import { messageFrom } from "../api/axios";
 
-const CASH_KINDS = ["deposit", "withdrawal", "dividend"];
-
 const emptyForm = {
-  kind: "buy",
-  symbol: "",
+  type: "BUY",
+  instrument: "",
   quantity: "",
-  price: "",
-  amount: "",
-  occurred_at: new Date().toISOString().slice(0, 10),
-  notes: "",
+  unit_price: "",
+  trade_date: new Date().toISOString().slice(0, 10),
 };
 
 export default function TransactionForm({ onSubmit }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const isCash = CASH_KINDS.includes(form.kind);
 
   function update(event) {
     const { name, value } = event.target;
@@ -28,21 +23,9 @@ export default function TransactionForm({ onSubmit }) {
     event.preventDefault();
     setError("");
     setSaving(true);
-    const payload = {
-      kind: form.kind,
-      occurred_at: form.occurred_at,
-      notes: form.notes,
-    };
-    if (isCash) {
-      payload.amount = form.amount;
-    } else {
-      payload.symbol = form.symbol;
-      payload.quantity = form.quantity;
-      payload.price = form.price;
-    }
     try {
-      await onSubmit(payload);
-      setForm((current) => ({ ...emptyForm, kind: current.kind, occurred_at: current.occurred_at }));
+      await onSubmit(form);
+      setForm((current) => ({ ...emptyForm, type: current.type, trade_date: current.trade_date }));
     } catch (err) {
       setError(messageFrom(err) || "Could not save the transaction");
     } finally {
@@ -55,47 +38,31 @@ export default function TransactionForm({ onSubmit }) {
       <div className="form-grid">
         <label>
           Type
-          <select name="kind" value={form.kind} onChange={update}>
-            <option value="buy">Buy</option>
-            <option value="sell">Sell</option>
-            <option value="deposit">Deposit</option>
-            <option value="withdrawal">Withdrawal</option>
-            <option value="dividend">Dividend</option>
+          <select name="type" value={form.type} onChange={update}>
+            <option value="BUY">Buy</option>
+            <option value="SELL">Sell</option>
           </select>
         </label>
         <label>
           Date
-          <input type="date" name="occurred_at" value={form.occurred_at} onChange={update} required />
+          <input type="date" name="trade_date" value={form.trade_date} onChange={update} required />
         </label>
-        {isCash ? (
-          <label>
-            Amount
-            <input name="amount" value={form.amount} onChange={update} inputMode="decimal" required />
-          </label>
-        ) : (
-          <>
-            <label>
-              Symbol
-              <input name="symbol" value={form.symbol} onChange={update} required />
-            </label>
-            <label>
-              Quantity
-              <input name="quantity" value={form.quantity} onChange={update} inputMode="decimal" required />
-            </label>
-            <label>
-              Price
-              <input name="price" value={form.price} onChange={update} inputMode="decimal" required />
-            </label>
-          </>
-        )}
-        <label className="span-2">
-          Notes
-          <input name="notes" value={form.notes} onChange={update} />
+        <label>
+          Instrument
+          <input name="instrument" value={form.instrument} onChange={update} required />
+        </label>
+        <label>
+          Quantity
+          <input name="quantity" value={form.quantity} onChange={update} inputMode="decimal" required />
+        </label>
+        <label>
+          Unit price
+          <input name="unit_price" value={form.unit_price} onChange={update} inputMode="decimal" required />
         </label>
       </div>
       {error ? <p className="form-error">{error}</p> : null}
       <button className="button" type="submit" disabled={saving}>
-        {saving ? "Saving…" : "Add transaction"}
+        {saving ? "Saving…" : "Add trade"}
       </button>
     </form>
   );

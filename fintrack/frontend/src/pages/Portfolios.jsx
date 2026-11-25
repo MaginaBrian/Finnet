@@ -3,9 +3,11 @@ import PortfolioCard from "../components/PortfolioCard";
 import { messageFrom } from "../api/axios";
 import { createPortfolio, listPortfolios } from "../api/portfolioApi";
 
+const emptyForm = { name: "", client_name: "", base_currency: "KES" };
+
 export default function Portfolios() {
   const [portfolios, setPortfolios] = useState([]);
-  const [form, setForm] = useState({ name: "", description: "" });
+  const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -26,7 +28,7 @@ export default function Portfolios() {
     try {
       const created = await createPortfolio(form);
       setPortfolios((current) => [created, ...current]);
-      setForm({ name: "", description: "" });
+      setForm(emptyForm);
     } catch (err) {
       setError(messageFrom(err) || "Could not create the portfolio");
     } finally {
@@ -48,8 +50,15 @@ export default function Portfolios() {
           <input name="name" value={form.name} onChange={update} required />
         </label>
         <label>
-          Description
-          <input name="description" value={form.description} onChange={update} />
+          Client
+          <input name="client_name" value={form.client_name} onChange={update} required />
+        </label>
+        <label>
+          Currency
+          <select name="base_currency" value={form.base_currency} onChange={update}>
+            <option value="KES">KES</option>
+            <option value="USD">USD</option>
+          </select>
         </label>
         <button className="button" type="submit" disabled={saving}>
           {saving ? "Adding…" : "Add portfolio"}

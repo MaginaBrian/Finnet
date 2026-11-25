@@ -1,19 +1,11 @@
-function formatMoney(value) {
+function formatMoney(value, currency = "KES") {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
   }).format(Number(value) || 0);
 }
 
-function signedAmount(transaction) {
-  const amount = Number(transaction.amount) || 0;
-  if (transaction.kind === "buy" || transaction.kind === "withdrawal") {
-    return -amount;
-  }
-  return amount;
-}
-
-export default function TransactionTable({ transactions, onDelete }) {
+export default function TransactionTable({ transactions, onDelete, currency = "KES" }) {
   if (!transactions?.length) {
     return <p className="empty">No transactions yet.</p>;
   }
@@ -25,34 +17,33 @@ export default function TransactionTable({ transactions, onDelete }) {
           <tr>
             <th>Date</th>
             <th>Type</th>
-            <th>Symbol</th>
+            <th>Instrument</th>
             <th>Qty</th>
             <th>Price</th>
-            <th>Amount</th>
+            <th>Total</th>
             {onDelete ? <th /> : null}
           </tr>
         </thead>
         <tbody>
-          {transactions.map((transaction) => {
-            const amount = signedAmount(transaction);
-            return (
-              <tr key={transaction.id}>
-                <td>{transaction.occurred_at.slice(0, 10)}</td>
-                <td className="kind">{transaction.kind}</td>
-                <td>{transaction.symbol || "—"}</td>
-                <td>{transaction.quantity ?? "—"}</td>
-                <td>{transaction.price == null ? "—" : formatMoney(transaction.price)}</td>
-                <td className={amount < 0 ? "negative" : "positive"}>{formatMoney(amount)}</td>
-                {onDelete ? (
-                  <td>
-                    <button type="button" className="text-button" onClick={() => onDelete(transaction.id)}>
-                      Remove
-                    </button>
-                  </td>
-                ) : null}
-              </tr>
-            );
-          })}
+          {transactions.map((transaction) => (
+            <tr key={transaction.id}>
+              <td>{transaction.trade_date}</td>
+              <td className="kind">{transaction.type}</td>
+              <td>{transaction.instrument}</td>
+              <td>{transaction.quantity}</td>
+              <td>{formatMoney(transaction.unit_price, currency)}</td>
+              <td className={transaction.type === "SELL" ? "negative" : "positive"}>
+                {formatMoney(transaction.total, currency)}
+              </td>
+              {onDelete ? (
+                <td>
+                  <button type="button" className="text-button" onClick={() => onDelete(transaction.id)}>
+                    Remove
+                  </button>
+                </td>
+              ) : null}
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

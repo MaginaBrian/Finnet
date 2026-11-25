@@ -1,5 +1,5 @@
-from app.models.portfolio import Portfolio
-from app.models.transaction import Transaction
-from app.models.user import User
+from .portfolio import CURRENCIES, Portfolio
+from .transaction import TRANSACTION_TYPES, Transaction
+from .user import User
 
-__all__ = ["User", "Portfolio", "Transaction"]
+__all__ = ["User", "Portfolio", "Transaction", "CURRENCIES", "TRANSACTION_TYPES"]

@@ -6,7 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Login() {
     setSaving(true);
     setError("");
     try {
-      await login(form.email, form.password);
+      await login(form.username, form.password);
       navigate("/");
     } catch (err) {
       setError(messageFrom(err) || "Could not sign in");
@@ -33,10 +33,10 @@ export default function Login() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <p className="eyebrow">Fintrack</p>
         <h1>Welcome back</h1>
-        <p className="lede">Sign in to see your portfolios and cash balances.</p>
+        <p className="lede">Sign in to see client portfolios and positions.</p>
         <label>
-          Email
-          <input name="email" type="email" value={form.email} onChange={update} required />
+          Username
+          <input name="username" value={form.username} onChange={update} autoComplete="username" required />
         </label>
         <label>
           Password

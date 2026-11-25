@@ -5,10 +5,10 @@ import TransactionTable from "../components/TransactionTable";
 import { deletePortfolio, getPortfolio } from "../api/portfolioApi";
 import { createTransaction, deleteTransaction } from "../api/transactionApi";
 
-function formatMoney(value) {
+function formatMoney(value, currency) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: currency || "KES",
   }).format(Number(value) || 0);
 }
 
@@ -50,6 +50,9 @@ export default function PortfolioDetails() {
     return <p className="page-loading">Loading portfolio…</p>;
   }
 
+  const currency = portfolio.base_currency;
+  const totals = portfolio.totals || {};
+
   return (
     <section>
       <header className="page-header">
@@ -58,7 +61,9 @@ export default function PortfolioDetails() {
             <Link to="/portfolios">Portfolios</Link>
           </p>
           <h1>{portfolio.name}</h1>
-          <p className="lede">{portfolio.description}</p>
+          <p className="lede">
+            {portfolio.client_name} · {currency}
+          </p>
         </div>
         <button className="button button-ghost" type="button" onClick={handleDeletePortfolio}>
           Delete portfolio
@@ -66,16 +71,16 @@ export default function PortfolioDetails() {
       </header>
       <div className="stat-grid">
         <article>
-          <p>Net worth</p>
-          <strong>{formatMoney(portfolio.net_worth)}</strong>
+          <p>Market value</p>
+          <strong>{formatMoney(totals.total_value, currency)}</strong>
         </article>
         <article>
-          <p>Cash</p>
-          <strong>{formatMoney(portfolio.cash)}</strong>
+          <p>Invested</p>
+          <strong>{formatMoney(totals.total_invested, currency)}</strong>
         </article>
         <article>
-          <p>Holdings at cost</p>
-          <strong>{formatMoney(portfolio.holdings_value)}</strong>
+          <p>Unrealized P/L</p>
+          <strong>{formatMoney(totals.unrealized_pl, currency)}</strong>
         </article>
       </div>
       <h2>Holdings</h2>
@@ -84,33 +89,35 @@ export default function PortfolioDetails() {
           <table>
             <thead>
               <tr>
-                <th>Symbol</th>
+                <th>Instrument</th>
                 <th>Quantity</th>
                 <th>Average cost</th>
-                <th>Cost basis</th>
+                <th>Last price</th>
+                <th>Value</th>
               </tr>
             </thead>
             <tbody>
               {portfolio.holdings.map((holding) => (
-                <tr key={holding.symbol}>
-                  <td>{holding.symbol}</td>
-                  <td>{holding.quantity}</td>
-                  <td>{formatMoney(holding.average_cost)}</td>
-                  <td>{formatMoney(holding.cost)}</td>
+                <tr key={holding.instrument}>
+                  <td>{holding.instrument}</td>
+                  <td>{holding.net_quantity}</td>
+                  <td>{formatMoney(holding.average_cost, currency)}</td>
+                  <td>{formatMoney(holding.last_price, currency)}</td>
+                  <td>{formatMoney(holding.total_value, currency)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <p className="empty">No share positions yet.</p>
+        <p className="empty">No open positions yet.</p>
       )}
-      <h2>Add a transaction</h2>
+      <h2>Add a trade</h2>
       <div className="panel">
         <TransactionForm onSubmit={handleCreate} />
       </div>
       <h2>Transactions</h2>
-      <TransactionTable transactions={portfolio.transactions} onDelete={handleDeleteTransaction} />
+      <TransactionTable transactions={portfolio.transactions} onDelete={handleDeleteTransaction} currency={currency} />
     </section>
   );
 }
