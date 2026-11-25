@@ -1,55 +1,85 @@
-import { createContext, useEffect, useMemo, useState } from "react";
-import * as authApi from "../api/authApi";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import * as authApi from "../api/auth";
+import { configureClient } from "../api/client";
 
-export const AuthContext = createContext(null);
+const AuthContext = createContext(null);
+const TOKEN_KEY = "fintrack.token";
+
+function readToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* storage unavailable: session lasts until reload */
+  }
+}
 
 export function AuthProvider({ children }) {
+  const [token, setToken] = useState(readToken);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [booting, setBooting] = useState(Boolean(readToken()));
 
+  const logout = useCallback(() => {
+    writeToken(null);
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  // Let the API client read the latest token and sign out on any 401.
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
+    configureClient({ getToken: () => token, onUnauthorized: logout });
+  }, [token, logout]);
+
+  // Validate a stored token once on load.
+  useEffect(() => {
+    if (!token || user) {
+      setBooting(false);
       return;
     }
+    const controller = new AbortController();
     authApi
-      .fetchMe()
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem("token");
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
+      .fetchMe(controller.signal)
+      .then((res) => setUser(res.user))
+      .catch((err) => err.name !== "AbortError" && logout())
+      .finally(() => setBooting(false));
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const accept = useCallback((res) => {
+    writeToken(res.token);
+    configureClient({ getToken: () => res.token });
+    setToken(res.token);
+    setUser(res.user);
   }, []);
 
   const value = useMemo(
     () => ({
       user,
-      loading,
-      async login(username, password) {
-        const result = await authApi.login({ username, password });
-        localStorage.setItem("token", result.token);
-        setUser(result.user);
-        return result.user;
-      },
-      async register(username, fullName, password) {
-        const result = await authApi.register({
-          username,
-          full_name: fullName,
-          password,
-        });
-        localStorage.setItem("token", result.token);
-        setUser(result.user);
-        return result.user;
-      },
-      logout() {
-        localStorage.removeItem("token");
-        setUser(null);
-      },
+      token,
+      booting,
+      isAuthenticated: Boolean(token),
+      login: async (username, password) => accept(await authApi.login(username, password)),
+      register: async (username, password, fullName) =>
+        accept(await authApi.register(username, password, fullName)),
+      logout,
     }),
-    [user, loading]
+    [user, token, booting, accept, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+  return ctx;
 }

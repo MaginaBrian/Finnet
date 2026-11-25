@@ -1,14 +1,11 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { LoadingState } from "./StateViews";
 
-export default function ProtectedRoute() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div className="page-loading">Loading your account…</div>;
-  }
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  return <Outlet />;
+export default function ProtectedRoute({ children }) {
+  const { isAuthenticated, booting } = useAuth();
+  const location = useLocation();
+  if (booting) return <LoadingState label="Checking your session…" />;
+  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return children;
 }
