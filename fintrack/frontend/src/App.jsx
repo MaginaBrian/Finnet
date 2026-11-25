@@ -1,40 +1,28 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import { Route, Routes } from "react-router-dom";
+import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Sidebar from "./components/Sidebar";
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import PortfolioDetails from "./pages/PortfolioDetails";
-import Portfolios from "./pages/Portfolios";
-import Register from "./pages/Register";
-
-function AppShell() {
-  return (
-    <div className="app-shell">
-      <Sidebar />
-      <div className="app-main">
-        <Navbar />
-        <main className="page">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
-}
+import LoginPage from "./pages/LoginPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import PortfolioDetailPage from "./pages/PortfolioDetailPage";
+import PortfoliosPage from "./pages/PortfoliosPage";
+import RegisterPage from "./pages/RegisterPage";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppShell />}>
-          <Route index element={<Dashboard />} />
-          <Route path="portfolios" element={<Portfolios />} />
-          <Route path="portfolios/:id" element={<PortfolioDetails />} />
-        </Route>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<PortfoliosPage />} />
+        <Route path="portfolios/:id" element={<PortfolioDetailPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
