@@ -1,42 +1,52 @@
+"""FinTrack API application factory."""
+import click
 from flask import Flask
-from flask_jwt_extended import JWTManager
 
-from app.config import Config
-from app.extensions import cors, db, jwt, migrate
-from app.utils.responses import APIError, error
+from .utils.decorators import _load_local_env
+
+_load_local_env()
+
+from config import Config  # noqa: E402
+
+from .api import register_blueprints
+from .errors import register_error_handlers
+from .extensions import cors, db, migrate
+
+INSECURE_DEFAULT_SECRET = "dev-only-change-me"
 
 
-def create_app(config_class=Config):
+def create_app(config_object=Config) -> Flask:
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(config_object)
+
+    if app.config["APP_ENV"] == "production" and app.config["SECRET_KEY"] == INSECURE_DEFAULT_SECRET:
+        raise RuntimeError("SECRET_KEY must be set to a strong random value in production.")
 
     db.init_app(app)
-    migrate.init_app(app, db)
-    jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
+    from . import models  # noqa: F401  (registers tables for migrations)
 
-    from app import models  # noqa: F401
-    from app.routes import register_blueprints
+    migrate.init_app(app, db)
+    cors.init_app(
+        app,
+        resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},
+        allow_headers=["Authorization", "Content-Type"],
+    )
 
     register_blueprints(app)
-    _register_handlers(app, jwt)
+    register_error_handlers(app)
+
+    @app.after_request
+    def security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
+    @app.cli.command("seed-demo")
+    def seed_demo_command():
+        """Create the demo analyst and sample portfolios (idempotent)."""
+        from .seed import seed_demo
+
+        created = seed_demo()
+        click.echo("Demo data created." if created else "Demo data already present.")
+
     return app
-
-
-def _register_handlers(app, jwt_manager: JWTManager):
-    @app.errorhandler(APIError)
-    def handle_api_error(err):
-        db.session.rollback()
-        return error(err.message, err.status)
-
-    @jwt_manager.unauthorized_loader
-    def missing_token(_reason):
-        return error("Authentication required", 401)
-
-    @jwt_manager.invalid_token_loader
-    def invalid_token(_reason):
-        return error("Invalid token", 401)
-
-    @jwt_manager.expired_token_loader
-    def expired_token(_header, _payload):
-        return error("Token expired", 401)

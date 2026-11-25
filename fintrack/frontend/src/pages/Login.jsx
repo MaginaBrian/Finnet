@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { messageFrom } from "../api/axios";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
@@ -21,7 +22,7 @@ export default function Login() {
       await login(form.email, form.password);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.error || "Could not sign in");
+      setError(messageFrom(err) || "Could not sign in");
     } finally {
       setSaving(false);
     }

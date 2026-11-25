@@ -12,4 +12,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export function messageFrom(err) {
+  const error = err.response?.data?.error;
+  if (!error) return "";
+  if (typeof error === "string") return error;
+  return error.message || "";
+}
+
 export default api;

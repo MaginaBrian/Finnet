@@ -1,15 +1,14 @@
 from flask import Blueprint, request
-from flask_jwt_extended import (
-    create_access_token,
-    create_refresh_token,
-    get_jwt_identity,
-    jwt_required,
-)
 
 from app.extensions import db
 from app.models.user import User
 from app.services.auth_service import authenticate, register_user
-from app.utils.decorators import get_current_user
+from app.utils.decorators import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_current_user,
+)
 from app.utils.responses import APIError, ok
 
 auth_bp = Blueprint("auth", __name__)
@@ -30,15 +29,12 @@ def login():
 
 
 @auth_bp.post("/refresh")
-@jwt_required(refresh=True)
 def refresh():
-    identity = get_jwt_identity()
-    if identity is None:
-        raise APIError("Authentication required", 401)
-    user = db.session.get(User, int(identity))
+    payload = decode_token("refresh")
+    user = db.session.get(User, int(payload["sub"]))
     if user is None:
         raise APIError("User not found", 401)
-    return ok({"access_token": create_access_token(identity=str(user.id))})
+    return ok({"access_token": create_access_token(user.id)})
 
 
 @auth_bp.get("/me")
@@ -47,9 +43,8 @@ def me():
 
 
 def _token_payload(user):
-    identity = str(user.id)
     return {
-        "access_token": create_access_token(identity=identity),
-        "refresh_token": create_refresh_token(identity=identity),
+        "access_token": create_access_token(user.id),
+        "refresh_token": create_refresh_token(user.id),
         "user": user.to_dict(),
     }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PortfolioCard from "../components/PortfolioCard";
+import { messageFrom } from "../api/axios";
 import { createPortfolio, listPortfolios } from "../api/portfolioApi";
 
 export default function Portfolios() {
@@ -27,7 +28,7 @@ export default function Portfolios() {
       setPortfolios((current) => [created, ...current]);
       setForm({ name: "", description: "" });
     } catch (err) {
-      setError(err.response?.data?.error || "Could not create the portfolio");
+      setError(messageFrom(err) || "Could not create the portfolio");
     } finally {
       setSaving(false);
     }

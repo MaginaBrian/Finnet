@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { messageFrom } from "../api/axios";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Register() {
@@ -21,7 +22,7 @@ export default function Register() {
       await register(form.name, form.email, form.password);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.error || "Could not create the account");
+      setError(messageFrom(err) || "Could not create the account");
     } finally {
       setSaving(false);
     }

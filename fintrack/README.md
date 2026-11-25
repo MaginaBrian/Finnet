@@ -20,24 +20,17 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-python -m app.seed
+flask --app wsgi db upgrade
+flask --app wsgi seed-demo
 python run.py
 ```
 
-The API listens on `http://localhost:5000`.
+The API listens on `http://localhost:5000`. Production uses `./start.sh`, which migrates, seeds when `SEED_DEMO=true`, and serves with gunicorn on port 8000.
 
-Demo login after seeding:
+Demo login after seeding (`DEMO_USERNAME=demo`):
 
 - email: `demo@fintrack.app`
-- password: `demo1234`
-
-To use Flask-Migrate instead of `db.create_all()` inside the seed script:
-
-```bash
-flask --app run.py db init
-flask --app run.py db migrate -m "initial"
-flask --app run.py db upgrade
-```
+- password: `Demo@12345`
 
 Tests:
 

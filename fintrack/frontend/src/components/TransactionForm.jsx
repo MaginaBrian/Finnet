@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { messageFrom } from "../api/axios";
 
 const CASH_KINDS = ["deposit", "withdrawal", "dividend"];
 
@@ -43,7 +44,7 @@ export default function TransactionForm({ onSubmit }) {
       await onSubmit(payload);
       setForm((current) => ({ ...emptyForm, kind: current.kind, occurred_at: current.occurred_at }));
     } catch (err) {
-      setError(err.response?.data?.error || "Could not save the transaction");
+      setError(messageFrom(err) || "Could not save the transaction");
     } finally {
       setSaving(false);
     }
