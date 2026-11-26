@@ -90,11 +90,28 @@ The interface uses semantic headings and tables, labelled fields, a skip link, k
 ## Layout
 
 ```
-├── backend/                 Flask API, migrations, OpenAPI spec, pytest
-├── frontend/                React client
-├── docker-compose.yml       Postgres, API, and frontend
-├── render.yaml              Render blueprint for the API and Postgres
-└── .github/workflows/ci.yml Tests and the frontend production build
+fintrack/
+├── backend/                 Flask API
+│   ├── app/
+│   │   ├── models/          User, Portfolio, Transaction
+│   │   ├── api/             auth, portfolios, transactions, docs (Swagger at /api/docs)
+│   │   ├── services/        ledger.py (holdings maths), validation.py, access.py
+│   │   ├── security.py      JWT and login_required
+│   │   ├── errors.py        one JSON error shape
+│   │   └── seed.py          demo user and 3 sample portfolios
+│   ├── migrations/          initial schema
+│   ├── tests/               32 tests
+│   ├── openapi.yaml, Dockerfile, start.sh, .env.example
+├── frontend/                React (Vite)
+│   └── src/
+│       ├── api/             fetch client and one module per resource
+│       ├── context/         auth state, session restore, sign-out on 401
+│       ├── hooks/, utils/   data loading, formatting, validation
+│       ├── components/      forms, tables, donut chart, dialogs, empty/error/loading states
+│       ├── pages/           login, register, portfolio list, portfolio detail
+│       └── styles/          tokens.css (navy, one amber accent, greys, defined once)
+├── docker-compose.yml, render.yaml, .github/workflows/ci.yml
+└── README.md
 ```
 
 ## Environment
@@ -231,15 +248,14 @@ On boot, `backend/start.sh` applies migrations, seeds the demo analyst when `SEE
 
 ### Live URLs
 
-The hosts assign these. Write them here, and in the submission email, once the deploy is up.
-
 | Surface | URL |
 | --- | --- |
-| Frontend | |
-| API health | |
-| Swagger UI | `/api/docs` on the API host |
-| OpenAPI | `/api/openapi.yaml` on the API host |
-| Demo login | `demo` / `Demo@12345`, unless `DEMO_PASSWORD` was changed on Render |
+| Frontend | https://fintrack-web-im53.onrender.com/ |
+| API | https://fintrack-api-eal8.onrender.com/ |
+| API health | https://fintrack-api-eal8.onrender.com/api/health |
+| Swagger UI | https://fintrack-api-eal8.onrender.com/api/docs |
+| OpenAPI | https://fintrack-api-eal8.onrender.com/api/openapi.yaml |
+| Demo login | `demo` / `Demo@12345` |
 
 ## Repository
 
@@ -264,6 +280,6 @@ Cursor was used as a coding assistant while building FinTrack. The behaviour abo
 Reply to the recruitment email with:
 
 1. Repository: https://github.com/MaginaBrian/Finnet
-2. Live frontend URL, live Swagger URL, and the demo login from the table above.
+2. Frontend: https://fintrack-web-im53.onrender.com/ — Swagger: https://fintrack-api-eal8.onrender.com/api/docs — demo login `demo` / `Demo@12345`.
 3. Approximate hours spent.
 4. Notes: data is fictional. Valuation is the last traded price on a weighted-average cost basis. CORS on the API must be the deployed frontend origin.
